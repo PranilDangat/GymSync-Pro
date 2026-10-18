@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 
@@ -30,6 +32,8 @@ public class MemberServiceImpl implements MemberService {
         // We can use @RequiredArgsConstructor for automatic constructor that handles dependency injection.
     }
 
+
+    // Add member code
     // Data Validation method
     private void validateDuplicateMemberData(MemberRequestDto requestDto) {
         if (memberRepository.existsByPhoneNumber(requestDto.getPhoneNumber())) {
@@ -99,14 +103,6 @@ public class MemberServiceImpl implements MemberService {
 
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public MemberResponseDto getMemberById(Long memberId) {
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new ResourceNotFoundException("Member not found with id: " + memberId));
-        return mapToResponseDto(member);
-    }
-
     private MemberResponseDto mapToResponseDto(Member member) {
         MemberResponseDto responseDto = new MemberResponseDto();
         responseDto.setMemberId(member.getMemberId());
@@ -128,4 +124,128 @@ public class MemberServiceImpl implements MemberService {
         }
         return responseDto;
     }
+
+    // Add member code finished.
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MemberResponseDto> getAllMembers() {
+        List<Member> members = memberRepository.findAllByMemberStatusNot(MemberStatus.DELETED);
+        List<MemberResponseDto> response = new ArrayList<>();
+        for (Member member : members) {
+            response.add(mapToResponseDto(member));
+        }
+        return response;
+    }
+
+    private void validateMemberForUpdate(
+            Member existingMember,
+            MemberRequestDto requestDto
+    ) {
+
+        // Check phone number only if it has changed
+        if (!existingMember.getPhoneNumber().equals(requestDto.getPhoneNumber())
+                && memberRepository.existsByPhoneNumber(requestDto.getPhoneNumber())) {
+
+            throw new DuplicateResourceException("Phone number already exists.");
+        }
+
+        // Check email only if it has changed
+        if (requestDto.getEmail() != null
+                && !requestDto.getEmail().isBlank()
+                && !requestDto.getEmail().equals(existingMember.getEmail())
+                && memberRepository.existsByEmail(requestDto.getEmail())) {
+
+            throw new DuplicateResourceException("Email already exists.");
+        }
+    }
+
+    @Transactional
+    @Override
+    public MemberResponseDto updateMember(Long memberId, MemberRequestDto requestDto) {
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Member not found with id: " + memberId
+                        ));
+
+        validateMemberForUpdate(member, requestDto);
+
+        // Update fields
+        member.setFirstName(requestDto.getFirstName());
+        member.setLastName(requestDto.getLastName());
+        member.setGender(requestDto.getGender());
+        member.setDateOfBirth(requestDto.getDateOfBirth());
+
+        member.setPhoneNumber(requestDto.getPhoneNumber());
+        member.setEmail(requestDto.getEmail());
+
+        member.setLocality(requestDto.getLocality());
+        member.setPinCode(requestDto.getPinCode());
+
+        member.setOccupation(requestDto.getOccupation());
+
+        member.setBloodGroup(requestDto.getBloodGroup());
+        member.setMedicalCondition(requestDto.getMedicalCondition());
+        member.setAllergies(requestDto.getAllergies());
+
+        member.setEmergencyContactName(requestDto.getEmergencyContactName());
+        member.setEmergencyContactNumber(requestDto.getEmergencyContactNumber());
+        member.setEmergencyContactRelationship(requestDto.getEmergencyContactRelationship());
+
+        // Update trainer
+        if (requestDto.getTrainerId() != null) {
+
+            Trainer trainer = trainerRepository.findById(requestDto.getTrainerId())
+                    .orElseThrow(() ->
+                            new ResourceNotFoundException(
+                                    "Trainer not found with id: " + requestDto.getTrainerId()
+                            ));
+
+            member.setTrainer(trainer);
+        }else {
+            member.setTrainer(null);
+        }
+
+        Member updatedMember = memberRepository.save(member);
+
+        return mapToResponseDto(updatedMember);
+    }
+
+    @Override
+    @Transactional
+    public void deleteMember(Long memberId) {
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Member not found with id: " + memberId
+                        )
+                );
+
+        memberRepository.delete(member);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public MemberResponseDto getMemberById(Long memberId) {
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Member not found with id: " + memberId
+                        )
+                );
+
+        // If member is soft deleted, don't return it
+        if (member.getMemberStatus() == MemberStatus.DELETED) {
+            throw new ResourceNotFoundException(
+                    "Member not found with id: " + memberId
+            );
+        }
+
+        return mapToResponseDto(member);
+    }
+
 }
