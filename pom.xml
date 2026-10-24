@@ -9,7 +9,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.pranil.gymmanagement</groupId>
-	<artifactId>gym-man</artifactId>
+	<artifactId>GymSync-Pro</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name/>
 	<description/>
