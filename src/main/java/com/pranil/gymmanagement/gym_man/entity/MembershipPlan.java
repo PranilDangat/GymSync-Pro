@@ -30,7 +30,7 @@ public class MembershipPlan extends BaseEntity {
             nullable = false)
     private Integer durationInDays;
 
-    @Column(
+    @Column( name ="price",
             precision = 10,
             scale = 2,
             nullable = false

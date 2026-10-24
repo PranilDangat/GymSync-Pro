@@ -204,7 +204,7 @@ public class MemberServiceImpl implements MemberService {
                             ));
 
             member.setTrainer(trainer);
-        }else {
+        } else {
             member.setTrainer(null);
         }
 
@@ -223,8 +223,8 @@ public class MemberServiceImpl implements MemberService {
                                 "Member not found with id: " + memberId
                         )
                 );
-
-        memberRepository.delete(member);
+        member.setMemberStatus(MemberStatus.DELETED);
+        memberRepository.save(member);
     }
 
     @Override
